@@ -18,6 +18,7 @@
 		<java.version>11</java.version>
 		<spring-boot-admin.version>2.2.1</spring-boot-admin.version>
 		<spring-cloud.version>Hoxton.SR1</spring-cloud.version>
+		<git-commit-id-plugin.version>4.0.0</git-commit-id-plugin.version>
 	</properties>
 
 	<dependencies>
@@ -111,6 +112,38 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<executable>true</executable>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<version>${git-commit-id-plugin.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
+					<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+					<generateGitPropertiesFile>true</generateGitPropertiesFile>
+					<includeOnlyProperties>
+						<includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+						<includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
+						<includeOnlyProperty>^git.branch$</includeOnlyProperty>
+					</includeOnlyProperties>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

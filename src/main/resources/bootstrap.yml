@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: greeting-service
+  boot:
+    admin:
+      client:
+        url: http://localhost:8761/admin
+        instance:
+          name: ${spring.application.name}
+          prefer-ip: true
+  cloud:
+    config:
+      uri: http://localhost:8761/config
+  profiles:
+    active: dev
