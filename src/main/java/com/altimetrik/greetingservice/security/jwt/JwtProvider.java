@@ -6,6 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,9 +23,12 @@ import java.util.stream.Collectors;
 @Component
 public class JwtProvider implements InitializingBean {
 
+    @Value("${altimetrik.jwt.secret}")
+    private String secretKey;
+
     private static final String AUTHORITIES_KEY = "auth";
     private static final String USER_ID_KEY = "userId";
-    private String SECRET_KEY = "NjBlZTZmNjVhYTRlMTdiNzM3NGIwNDFhOTRlYmUxNWYxMzEyNDFkZTU5ZjI0ZmQ4MGE3ZDU2ZTY5NjE5YTk1ZmQzNDc2OGQ1Yjc5ZTI4MzMzMTk4N2ExMTVjN2NiMTZlMmNkOQ";
+
     private Key key;
 
     @Override
@@ -32,7 +36,7 @@ public class JwtProvider implements InitializingBean {
         byte[] keyBytes;
 
         //log.debug("Using a Base64-encoded JWT secret key");
-        keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        keyBytes = Decoders.BASE64.decode(secretKey);
 
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
@@ -51,7 +55,7 @@ public class JwtProvider implements InitializingBean {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
     private Boolean isTokenExpired(String token) {
