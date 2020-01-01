@@ -26,6 +26,9 @@ public class JwtProvider implements InitializingBean {
     @Value("${altimetrik.jwt.secret}")
     private String secretKey;
 
+    @Value("${altimetrik.jwt.validityInSeconds}")
+    private Integer validityInSeconds;
+
     private static final String AUTHORITIES_KEY = "auth";
     private static final String USER_ID_KEY = "userId";
 
@@ -89,8 +92,7 @@ public class JwtProvider implements InitializingBean {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        Date validity = new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10);
-
+        Date validity = new Date(System.currentTimeMillis() + 1000 * validityInSeconds);
 
         Map<String, Object> claimMap = new HashMap<>();
         claimMap.put(USER_ID_KEY, userId);
