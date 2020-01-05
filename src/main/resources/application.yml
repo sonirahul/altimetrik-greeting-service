@@ -54,3 +54,8 @@ altimetrik:
   jwt:
     secret: ThisValueWillComeFromSpringConfigServerWhichInTurnWouldFetchItFromGitRepo
     validityInSeconds: 600
+
+logging:
+  level:
+    ROOT: info
+    com.altimetrik.greetingservice: debug
