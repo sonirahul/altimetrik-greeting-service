@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.altimetrik</groupId>
-    <artifactId>greeting-service</artifactId>
+    <artifactId>altimetrik-greeting-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>greeting-service</name>
+    <name>altimetrik-greeting-service</name>
     <description>Demo project for Spring Boot</description>
 
     <properties>
