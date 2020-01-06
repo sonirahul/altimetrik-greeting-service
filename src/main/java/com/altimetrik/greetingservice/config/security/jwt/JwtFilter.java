@@ -1,6 +1,8 @@
-package com.altimetrik.greetingservice.security.jwt;
+package com.altimetrik.greetingservice.config.security.jwt;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.altimetrik.greetingservice.config.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -12,32 +14,35 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    public static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @Autowired
     private JwtProvider jwtProvider;
+
+    public JwtFilter(JwtProvider jwtProvider) {
+        this.jwtProvider = jwtProvider;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
+        final String authorizationHeader = request.getHeader(Constants.AUTHORIZATION);
 
         String jwt = null;
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
+        if (authorizationHeader != null && authorizationHeader.startsWith(Constants.BEARER)) {
+            jwt = authorizationHeader.substring(Constants.SEVEN);
         }
 
-        if (SecurityContextHolder.getContext().getAuthentication() == null && StringUtils.hasText(jwt) && this.jwtProvider.validateToken(jwt)) {
+        if (SecurityContextHolder.getContext().getAuthentication() == null && StringUtils.hasText(jwt) && this.jwtProvider.validateToken(jwt, request)) {
             Authentication authentication = this.jwtProvider.getAuthentication(jwt);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
         chain.doFilter(request, response);
     }
-
 }

@@ -1,10 +1,12 @@
-package com.altimetrik.greetingservice.security.jwt;
+package com.altimetrik.greetingservice.config.security.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.altimetrik.greetingservice.config.Constants;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,6 +17,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import javax.servlet.http.HttpServletRequest;
+import java.lang.invoke.MethodHandles;
 import java.security.Key;
 import java.util.*;
 import java.util.function.Function;
@@ -23,24 +27,19 @@ import java.util.stream.Collectors;
 @Component
 public class JwtProvider implements InitializingBean {
 
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     @Value("${altimetrik.jwt.secret}")
     private String secretKey;
-
-    @Value("${altimetrik.jwt.validityInSeconds}")
-    private Integer validityInSeconds;
-
-    private static final String AUTHORITIES_KEY = "auth";
-    private static final String USER_ID_KEY = "userId";
 
     private Key key;
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
         byte[] keyBytes;
 
-        //log.debug("Using a Base64-encoded JWT secret key");
+        log.debug("Using a Base64-encoded JWT secret key");
         keyBytes = Decoders.BASE64.decode(secretKey);
-
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -72,9 +71,9 @@ public class JwtProvider implements InitializingBean {
                 .getBody();
 
         Collection<? extends GrantedAuthority> authorities;
-        if (!StringUtils.isEmpty(claims.get(AUTHORITIES_KEY))) {
+        if (!StringUtils.isEmpty(claims.get(Constants.AUTHORITIES_KEY))) {
             authorities =
-                    Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
+                    Arrays.stream(claims.get(Constants.AUTHORITIES_KEY).toString().split(Constants.COMMA))
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
 
@@ -82,33 +81,35 @@ public class JwtProvider implements InitializingBean {
             authorities = new ArrayList<>();
         }
 
-        User principal = new User(claims.getSubject(), "", authorities);
+        User principal = new User(claims.getSubject(), Constants.EMPTY, authorities);
 
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
-    public String createToken(Authentication authentication, String userId) {
-        String authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-
-        Date validity = new Date(System.currentTimeMillis() + 1000 * validityInSeconds);
-
-        Map<String, Object> claimMap = new HashMap<>();
-        claimMap.put(USER_ID_KEY, userId);
-
-        return Jwts.builder()
-                .setSubject(authentication.getName())
-                .claim(AUTHORITIES_KEY, authorities)
-                .addClaims(claimMap)
-                .signWith(key, SignatureAlgorithm.HS512)
-                .setExpiration(validity)
-                .compact();
-    }
-
-    public boolean validateToken(String authToken) {
-        Jwts.parser().setSigningKey(key).parseClaimsJws(authToken);
-        return true;
-
+    public boolean validateToken(String authToken, HttpServletRequest request) {
+        try {
+            Jwts.parser().setSigningKey(key).parseClaimsJws(authToken); // Validity is checked here.
+            return true;
+        } /*catch (JwtException | IllegalArgumentException e) {
+            //log.info("Invalid JWT token.");
+            //log.trace("Invalid JWT token trace.", e);
+            //throw e;
+        }*/ catch (SignatureException ex) {
+            log.info("Invalid JWT Signature");
+            request.setAttribute(Constants.JWT_EXCEPTION, Constants.SIGNATURE_EXCEPTION);
+        } catch (MalformedJwtException ex) {
+            log.info("Invalid JWT token");
+            request.setAttribute(Constants.JWT_EXCEPTION, Constants.MALFORMED_JWT_EXCEPTION);
+        } catch (ExpiredJwtException ex) {
+            log.info("Expired JWT token");
+            request.setAttribute(Constants.JWT_EXCEPTION, Constants.EXPIRED_JWT_EXCEPTION);
+        } catch (UnsupportedJwtException ex) {
+            log.info("Unsupported JWT exception");
+            request.setAttribute(Constants.JWT_EXCEPTION, Constants.UNSUPPORTED_JWT_EXCEPTION);
+        } catch (IllegalArgumentException ex) {
+            log.info("Jwt claims string is empty");
+            request.setAttribute(Constants.JWT_EXCEPTION, Constants.ILLEGAL_ARGUMENT_EXCEPTION);
+        }
+        return false;
     }
 }
